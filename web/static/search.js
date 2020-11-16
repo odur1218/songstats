@@ -43,6 +43,46 @@ function suggestions() {
     });
   });
 }
+function updateStats(artist) {
+  console.log("get stats for", artist.id);
+
+  let infoMsg = $('tr#' + artist.id + ' td.info-msg')
+
+  $.getJSON(apiUrl + '/stats/' + artist.id, function (data) {
+
+	if (data.pending) {
+		let s = infoMsg.text()
+		if (s.startsWith('Waiting for results')) {
+			s = s.replace(/\.*$/, '.'.repeat((s.substring(19).length + 1) % 6));
+			infoMsg.text(s);
+		}
+		setTimeout(updateStats, 5000, artist);
+
+	} else {
+		if (data.stats.nlyrics > 0) {
+			infoMsg.remove();
+
+			let tr = $('tr#' + artist.id)
+			let wc = data.stats.wordcount;
+
+			tr.append($('<td>' + wc.min + '</td>'));
+			tr.append($('<td>' + wc.max + '</td>'));
+			tr.append($('<td>' + Math.round(wc.avg) + '</td>'));
+			tr.append($('<td>' + Math.round(wc.std) + '</td>'));
+
+			let cb = tr.find('input')
+			cb.show()
+			cb.change(activatePlotButtons)
+		} else {
+			infoMsg.text("No lyrics found");
+		}
+    }
+  }).fail(function() {
+    infoMsg.text("An error has occured");
+  });
+
+}
+
 function getStats(artist) {
   if ($('tr#' + artist.id).length) {
     return;
@@ -54,39 +94,8 @@ function getStats(artist) {
   var e = $('<tr id="' + artist.id + '">' + r + '</tr')
   stats.append(e)
 
-  let tr = $('tr#' + artist.id)
-  let infoMsg = tr.find('td.info-msg')
+  updateStats(artist);
 
-  let cntr = setInterval(function() {
-    let s = infoMsg.text()
-	if (s.startsWith('Waiting for results')) {
-		s = s.replace(/\.*$/, '.'.repeat((s.substring(19).length + 1) % 6));
-		infoMsg.text(s);
-	}
-  }, 1000);
-
-  console.log("get stats for", artist.id);
-
-  $.getJSON(apiUrl + '/stats/' + artist.id, function (data) {
-
-    if (data.stats.nlyrics > 0) {
-        let wc = data.stats.wordcount;
-        tr.find('td.info-msg').remove();
-        tr.append($('<td>' + wc.min + '</td>'));
-        tr.append($('<td>' + wc.max + '</td>'));
-        tr.append($('<td>' + Math.round(wc.avg) + '</td>'));
-        tr.append($('<td>' + Math.round(wc.std) + '</td>'));
-        let cb = tr.find('input')
-        cb.show()
-        cb.change(activatePlotButtons)
-    } else {
-        tr.find('td.info-msg').text("No lyrics found");
-    }
-  }).fail(function() {
-    tr.find('td.info-msg').text("An error has occured");
-  }).always(function() {
-    clearInterval(cntr);  
-  });
 }
 
 function activatePlotButtons() {
