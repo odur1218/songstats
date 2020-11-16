@@ -17,4 +17,4 @@ COPY collect.py /app/
 COPY songlen /app/songlen
 COPY web /app/web
 
-CMD gunicorn --bind 0.0.0.0:$PORT wsgi
+CMD gunicorn --bind 0.0.0.0:$PORT wsgi -w 2 --timeout 120
